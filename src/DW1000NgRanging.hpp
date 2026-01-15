@@ -56,4 +56,6 @@ namespace DW1000NgRanging {
     returns the unbiased range
     */
     double correctRange(double range);
+
+    uint16_t getRangeInCm(double distanceMeters);
 }

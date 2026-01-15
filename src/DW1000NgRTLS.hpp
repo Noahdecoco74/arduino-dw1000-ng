@@ -133,6 +133,9 @@ namespace DW1000NgRTLS {
     */
     RangeAcceptResult anchorRangeAccept(NextActivity next, uint16_t value);
 
+    /* Instead of sending next anchor to ping, this function sends the calculated range*/
+    RangeAcceptResult anchorRangeAcceptRanges(NextActivity next);
+
     /* Used by tag to range after range request accept of the infrastructure 
        Target anchor is given after a range request success
        Finalmessagedelay is used in the process of TWR, a value of 1500 works on 8mhz-80mhz range devices,
@@ -144,4 +147,12 @@ namespace DW1000NgRTLS {
         Finalmessagedelay is the same as in function tagRangeInfrastructure
     */
     RangeInfrastructureResult tagTwrLocalize(uint16_t finalMessageDelay);
+
+    /* Used by tag to range after being requested by main anchor (in replacement of tagTwrLocalize)
+       Target anchor is given after a range request success
+       Finalmessagedelay is used in the process of TWR, a value of 1500 works on 8mhz-80mhz range devices,
+        you could try to decrease it to improve system performance.
+    */
+    RangeInfrastructureResultRanges tagRangeInfrastructureRanges(uint16_t finalMessageDelay, AnchorList list_of_ids);
+
 }
