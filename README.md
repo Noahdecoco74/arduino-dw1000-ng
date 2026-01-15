@@ -29,7 +29,7 @@ In the original version, there are 4 messages exchanged when using tagTwrLocaliz
 
 1. - Poll from Tag (transmitPoll)
 2. - ACTIVITY_CONTROL from anchor (transmitResponseToPoll)
-3. - final message from Tag (transmitFinalMessage)
+3. - FINAL_MESSAGE from Tag (transmitFinalMessage)
 4. - ranging confirm from Anchor (transmitRangingConfirm), where the anchor sends the id of the next tag, encoded in 2 bytes
 
 We then repeat steps 1-4 untill the last Anchor, where we send a transmitActivityFinished (instead of transmitRangingConfirm).
@@ -39,20 +39,24 @@ What we want is to exploit the 4th message to send the range instead of the id o
 
 For that, we need an architecture change, where the tag itself is aware of all anchor ids. 
 
-In an effort to change the source code the least possible, and make it retro compatible, we begin by creating a function tagTwrLocalizeRanges.
-It takes as input the list of anchor_short_id, and returns the rage with each.
+
+
+On a more global aspect, as we need to get the position of multiple tags, we decided to initiate all communications from the Main Anchor. In the process, this message replaces the RANGING_INITIATION from Main, reducing by one the amount of messages from the original architecture.
+
+
+A problem we encountered later was the range calculation time taken by the atmega 32u4 (2200 to 2500 µs). This forces us to add a delay in the loop. As the calculation time is much more reasonable on the ESP32 (around 170 µs), we replace the tag by the ESP32, and force all expensive calculations there. 
+This forces us to change the type of the fourth message to send the 2 timing values. 
 
 
 
+0. - 1 : data from Main (transmitTwrShortBlink)
+0. - 2 : Short blink from the tag (transmitRangingInitiation)
 
+1. - Poll from the Anchor (transmitPoll)
+2. - ACTIVITY_CONTROL from the Tag (transmitResponseToPoll)
+3. - FINAL_MESSAGE from the Anchor (transmitFinalMessage)
+4. - ranging confirm from the Tag  (transmitRangingConfirm)
 
-
-
-
-
-On a more global aspect, as we need to get the position of multiple tags, we decided to initiate all communications from the Main Anchor. In the process, we added one more message to the chain. 
-
-In a following optimisation step, we could replace this message by a RANGING_INITIATION from Main, reducing by one the amount of messages from the original architecture
 
 
 

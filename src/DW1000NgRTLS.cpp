@@ -160,7 +160,7 @@ namespace DW1000NgRTLS {
 
     static boolean waitForNextRangingStepDelay() {
         DW1000NgRTLS::waitForTransmission();
-        delayMicroseconds(2400); // wait for range calculation (2.2 -> 2.5 ms for the pro micro)
+        delayMicroseconds(800); // wait for range calculation (2.2 -> 2.5 ms for the pro micro)
         if(!DW1000NgRTLS::receiveFrame()) return false;
         return true;
     }
@@ -189,10 +189,12 @@ namespace DW1000NgRTLS {
         DW1000NgUtils::writeValueToBytes(target_anchor, anchor, 2);
         DW1000NgRTLS::transmitPoll(target_anchor);
         /* Start of poll control for range */
+        //delayMicroseconds(300);
         if(!DW1000NgRTLS::waitForNextRangingStep()) {
-            Serial.println("fail 1");
+            Serial.print("fail 1 : did not receive ACTIVITY_CONTROL"); Serial.print(", tstp: "); Serial.println(micros());
             returnValue = {false, false, 0, 0};
         } else {
+            Serial.print("Received ACTIVITY_CONTROL"); Serial.print(", tstp: "); Serial.println(micros());
 
             size_t cont_len = DW1000Ng::getReceivedDataLength();
             byte cont_recv[cont_len];
@@ -208,13 +210,14 @@ namespace DW1000NgRTLS {
                 );
 
                 if(!DW1000NgRTLS::waitForNextRangingStepDelay()) {
-                    Serial.println("fail 2");
+                    Serial.print("fail 2 : did not receive RANGING_CONFIRM"); Serial.print(", tstp: "); Serial.println(micros());
                     returnValue = {false, false, 0, 0};
                 } else {
+                    Serial.print("Received RANGING_CONFIRM"); Serial.print(", tstp: "); Serial.println(micros());
+
                     size_t act_len = DW1000Ng::getReceivedDataLength();
                     byte act_recv[act_len];
                     DW1000Ng::getReceivedData(act_recv, act_len);
-
                     if(act_len > 10 && act_recv[9] == ACTIVITY_CONTROL) {
                         if (act_len > 12 && act_recv[10] == RANGING_CONFIRM) {
                             returnValue = {true, true, static_cast<uint16_t>(DW1000NgUtils::bytesAsValue(&act_recv[11], 2)), 0};
@@ -390,8 +393,9 @@ namespace DW1000NgRTLS {
         double range;
         if(!DW1000NgRTLS::receiveFrame()) {
             returnValue = {false, 0};
-            //Serial.println("fail 1");
+            Serial.print("fail 1 : did no receive POLL"); Serial.print(", tstp: "); Serial.println(micros());
         } else {
+            Serial.print("Received POLL"); Serial.print(", tstp: "); Serial.println(micros());
 
             size_t poll_len = DW1000Ng::getReceivedDataLength();
             byte poll_data[poll_len];
@@ -402,31 +406,32 @@ namespace DW1000NgRTLS {
                 DW1000NgRTLS::transmitResponseToPoll(&poll_data[7]);
                 DW1000NgRTLS::waitForTransmission();
                 uint64_t timeResponseToPoll = DW1000Ng::getTransmitTimestamp();
-                delayMicroseconds(1500);
+                delayMicroseconds(40);
 
                 if(!DW1000NgRTLS::receiveFrame()) {
                     returnValue = {false, 0};
-                    //Serial.println("fail 2");
+                    Serial.print("fail 2 : did not receive FINAL_MESSAGE");Serial.print(", tstp: "); Serial.println(micros());
                 } else {
-
+                    Serial.print("receive FINAL_MESSAGE");Serial.print(", tstp: "); Serial.println(micros());
                     size_t rfinal_len = DW1000Ng::getReceivedDataLength();
                     byte rfinal_data[rfinal_len];
                     DW1000Ng::getReceivedData(rfinal_data, rfinal_len);
                     if(rfinal_len > 18 && rfinal_data[9] == RANGING_TAG_FINAL_RESPONSE_EMBEDDED) {
-                        Serial.print("dt calcul range cm: ");
-                        Serial.println(micros());
+                        //Serial.print("dt calcul range cm: ");
+                        //Serial.println(micros());
                         uint64_t timeFinalMessageReceive = DW1000Ng::getReceiveTimestamp();
 
-                        range = DW1000NgRanging::computeRangeAsymmetric(
+                        double range = 1.1;
+                        /*range = DW1000NgRanging::computeRangeAsymmetric(
                             DW1000NgUtils::bytesAsValue(rfinal_data + 10, LENGTH_TIMESTAMP), // Poll send time
                             timePollReceived, 
                             timeResponseToPoll, // Response to poll sent time
                             DW1000NgUtils::bytesAsValue(rfinal_data + 14, LENGTH_TIMESTAMP), // Response to Poll Received
                             DW1000NgUtils::bytesAsValue(rfinal_data + 18, LENGTH_TIMESTAMP), // Final Message send time
                             timeFinalMessageReceive // Final message receive time
-                        );
+                        );*/
 
-                        range = DW1000NgRanging::correctRange(range);
+                        //range = DW1000NgRanging::correctRange(range);
                         /* In case of wrong read due to bad device calibration */
                         if(range <= 0) 
                             range = 0.000001;
@@ -435,7 +440,7 @@ namespace DW1000NgRTLS {
                         #if defined(ESP32)
                             delayMicroseconds(2100);
                         #endif
-                        Serial.println(micros());
+                        //Serial.println(micros());
 
 
                         // We only send RANGING_CONFIRM to keep it backward compatible with the original tagFinishRange function
