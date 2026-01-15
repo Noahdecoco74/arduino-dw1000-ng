@@ -54,6 +54,15 @@ namespace DW1000NgRTLS {
         DW1000Ng::startTransmit();
     }
 
+    void transmitRangingInitiationShort(byte dest_short_address[]) {
+        byte RangingInitiation[] = {DATA, SHORT_SRC_AND_DEST, SEQ_NUMBER++, 0,0, 0,0, RANGING_INITIATION, 0,0};
+        DW1000Ng::getNetworkId(&RangingInitiation[3]);
+        DW1000Ng::getDeviceAddress(&RangingInitiation[5]);
+        memcpy(&RangingInitiation[8], dest_short_address, 2);
+        DW1000Ng::setTransmitData(RangingInitiation, sizeof(RangingInitiation));
+        DW1000Ng::startTransmit();
+    }
+
     void transmitPoll(byte anchor_address[]){
         byte Poll[] = {DATA, SHORT_SRC_AND_DEST, SEQ_NUMBER++, 0,0, 0,0, 0,0 , RANGING_TAG_POLL};
         DW1000Ng::getNetworkId(&Poll[3]);
