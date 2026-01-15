@@ -158,6 +158,13 @@ namespace DW1000NgRTLS {
         return true;
     }
 
+    static boolean waitForNextRangingStepDelay() {
+        DW1000NgRTLS::waitForTransmission();
+        delayMicroseconds(2400); // wait for range calculation (2.2 -> 2.5 ms for the pro micro)
+        if(!DW1000NgRTLS::receiveFrame()) return false;
+        return true;
+    }
+
     RangeRequestResult tagRangeRequest() {
         DW1000NgRTLS::transmitTwrShortBlink();
         
@@ -183,6 +190,7 @@ namespace DW1000NgRTLS {
         DW1000NgRTLS::transmitPoll(target_anchor);
         /* Start of poll control for range */
         if(!DW1000NgRTLS::waitForNextRangingStep()) {
+            Serial.println("fail 1");
             returnValue = {false, false, 0, 0};
         } else {
 
@@ -199,10 +207,10 @@ namespace DW1000NgRTLS {
                     DW1000Ng::getReceiveTimestamp()  // Response to poll receive time
                 );
 
-                if(!DW1000NgRTLS::waitForNextRangingStep()) {
+                if(!DW1000NgRTLS::waitForNextRangingStepDelay()) {
+                    Serial.println("fail 2");
                     returnValue = {false, false, 0, 0};
                 } else {
-
                     size_t act_len = DW1000Ng::getReceivedDataLength();
                     byte act_recv[act_len];
                     DW1000Ng::getReceivedData(act_recv, act_len);
@@ -214,10 +222,12 @@ namespace DW1000NgRTLS {
                             returnValue = {true, false, 0, calculateNewBlinkRate(act_recv)};
                         }
                     } else {
+                        Serial.println("fail 3");
                         returnValue = {false, false, 0, 0};
                     }
                 }
             } else {
+                Serial.println("fail 4");
                 returnValue = {false, false, 0, 0};
             }
             
@@ -271,15 +281,20 @@ namespace DW1000NgRTLS {
 
     RangeInfrastructureResultRanges tagRangeInfrastructureRanges(uint16_t finalMessageDelay, AnchorList list_of_ids) {
         RangeInfrastructureResultRanges returnValues;
-        uint16_t anchor_index = 0;
+        returnValues = {true , 0, 0, 0};
+        uint16_t anchor_ids[3] = {list_of_ids.Anchor_main_short_id, list_of_ids.Anchor_B_short_id, list_of_ids.Anchor_C_short_id};
 
-        for(uint16_t target_anchor : list_of_ids) {
-            RangeResult result = tagFinishRange(target_anchor, finalMessageDelay);
+        for(uint16_t anchor_index = 0; anchor_index < 3; anchor_index++) {
+            String toprint = "ranging with :";
+            toprint += anchor_ids[anchor_index];
+            Serial.println(toprint);
+            RangeResult result = tagFinishRange(anchor_ids[anchor_index], finalMessageDelay);
             if(!result.success) {
-                returnValues = {false , 0, 0, 0};
+                returnValues.success = false;
                 break;
             }
             else {
+                Serial.println(result.next_anchor);
                 if (anchor_index == 0) {
                     returnValues.Range_main = result.next_anchor;
                 } else if (anchor_index == 1) {
@@ -287,7 +302,6 @@ namespace DW1000NgRTLS {
                 } else if (anchor_index == 2) {
                     returnValues.Range_C = result.next_anchor;
                 }
-                anchor_index++;
             }
         }
         return returnValues;
@@ -376,6 +390,7 @@ namespace DW1000NgRTLS {
         double range;
         if(!DW1000NgRTLS::receiveFrame()) {
             returnValue = {false, 0};
+            //Serial.println("fail 1");
         } else {
 
             size_t poll_len = DW1000Ng::getReceivedDataLength();
@@ -391,12 +406,15 @@ namespace DW1000NgRTLS {
 
                 if(!DW1000NgRTLS::receiveFrame()) {
                     returnValue = {false, 0};
+                    //Serial.println("fail 2");
                 } else {
 
                     size_t rfinal_len = DW1000Ng::getReceivedDataLength();
                     byte rfinal_data[rfinal_len];
                     DW1000Ng::getReceivedData(rfinal_data, rfinal_len);
                     if(rfinal_len > 18 && rfinal_data[9] == RANGING_TAG_FINAL_RESPONSE_EMBEDDED) {
+                        Serial.print("dt calcul range cm: ");
+                        Serial.println(micros());
                         uint64_t timeFinalMessageReceive = DW1000Ng::getReceiveTimestamp();
 
                         range = DW1000NgRanging::computeRangeAsymmetric(
@@ -412,7 +430,12 @@ namespace DW1000NgRTLS {
                         /* In case of wrong read due to bad device calibration */
                         if(range <= 0) 
                             range = 0.000001;
-                        u_int16_t rangeCM = DW1000NgRanging::getRangeInCm(range)
+                        uint16_t rangeCM = DW1000NgRanging::getRangeInCm(range);
+                        //Serial.println(rangeCM);
+                        #if defined(ESP32)
+                            delayMicroseconds(2100);
+                        #endif
+                        Serial.println(micros());
 
 
                         // We only send RANGING_CONFIRM to keep it backward compatible with the original tagFinishRange function
