@@ -269,6 +269,30 @@ namespace DW1000NgRTLS {
         return returnValue;
     }
 
+    RangeInfrastructureResultRanges tagRangeInfrastructureRanges(uint16_t finalMessageDelay, AnchorList list_of_ids) {
+        RangeInfrastructureResultRanges returnValues;
+        uint16_t anchor_index = 0;
+
+        for(uint16_t target_anchor : list_of_ids) {
+            RangeResult result = tagFinishRange(target_anchor, finalMessageDelay);
+            if(!result.success) {
+                returnValues = {false , 0, 0, 0};
+                break;
+            }
+            else {
+                if (anchor_index == 0) {
+                    returnValues.Range_main = result.next_anchor;
+                } else if (anchor_index == 1) {
+                    returnValues.Range_B = result.next_anchor;
+                } else if (anchor_index == 2) {
+                    returnValues.Range_C = result.next_anchor;
+                }
+                anchor_index++;
+            }
+        }
+        return returnValues;
+    }
+
     RangeInfrastructureResult tagTwrLocalize(uint16_t finalMessageDelay) {
         RangeRequestResult request_result = DW1000NgRTLS::tagRangeRequest();
 
@@ -336,6 +360,66 @@ namespace DW1000NgRTLS {
                         /* In case of wrong read due to bad device calibration */
                         if(range <= 0) 
                             range = 0.000001;
+
+                        returnValue = {true, range};
+                    }
+                }
+            }
+        }
+
+        return returnValue;
+    }
+
+    RangeAcceptResult anchorRangeAcceptRanges(NextActivity next) {
+        RangeAcceptResult returnValue;
+
+        double range;
+        if(!DW1000NgRTLS::receiveFrame()) {
+            returnValue = {false, 0};
+        } else {
+
+            size_t poll_len = DW1000Ng::getReceivedDataLength();
+            byte poll_data[poll_len];
+            DW1000Ng::getReceivedData(poll_data, poll_len);
+
+            if(poll_len > 9 && poll_data[9] == RANGING_TAG_POLL) {
+                uint64_t timePollReceived = DW1000Ng::getReceiveTimestamp();
+                DW1000NgRTLS::transmitResponseToPoll(&poll_data[7]);
+                DW1000NgRTLS::waitForTransmission();
+                uint64_t timeResponseToPoll = DW1000Ng::getTransmitTimestamp();
+                delayMicroseconds(1500);
+
+                if(!DW1000NgRTLS::receiveFrame()) {
+                    returnValue = {false, 0};
+                } else {
+
+                    size_t rfinal_len = DW1000Ng::getReceivedDataLength();
+                    byte rfinal_data[rfinal_len];
+                    DW1000Ng::getReceivedData(rfinal_data, rfinal_len);
+                    if(rfinal_len > 18 && rfinal_data[9] == RANGING_TAG_FINAL_RESPONSE_EMBEDDED) {
+                        uint64_t timeFinalMessageReceive = DW1000Ng::getReceiveTimestamp();
+
+                        range = DW1000NgRanging::computeRangeAsymmetric(
+                            DW1000NgUtils::bytesAsValue(rfinal_data + 10, LENGTH_TIMESTAMP), // Poll send time
+                            timePollReceived, 
+                            timeResponseToPoll, // Response to poll sent time
+                            DW1000NgUtils::bytesAsValue(rfinal_data + 14, LENGTH_TIMESTAMP), // Response to Poll Received
+                            DW1000NgUtils::bytesAsValue(rfinal_data + 18, LENGTH_TIMESTAMP), // Final Message send time
+                            timeFinalMessageReceive // Final message receive time
+                        );
+
+                        range = DW1000NgRanging::correctRange(range);
+                        /* In case of wrong read due to bad device calibration */
+                        if(range <= 0) 
+                            range = 0.000001;
+                        u_int16_t rangeCM = DW1000NgRanging::getRangeInCm(range)
+
+
+                        // We only send RANGING_CONFIRM to keep it backward compatible with the original tagFinishRange function
+                        byte finishValue[2];
+                        DW1000NgUtils::writeValueToBytes(finishValue, rangeCM, 2);
+                        DW1000NgRTLS::transmitRangingConfirm(&rfinal_data[7], finishValue);
+                        DW1000NgRTLS::waitForTransmission();
 
                         returnValue = {true, range};
                     }

@@ -16,6 +16,46 @@ Status
 ------------
 :warning: We are archiving the repo as we can't support it anymore and we are not currently working with dw1000 hardware, feel free to create your own fork if you intend to support the project, we will be happy to add a link on this project. Thank you everyone for the support you gave this project it was truly appreciated.
 
+
+Differences with F-Army/arduino-dw1000-ng
+------------
+This is a fork of https://github.com/F-Army/arduino-dw1000-ng.<br/> 
+The main reason for this fork is to implement a tag centered positioning system.
+A "Main" Anchor indicates each tag sequentially to initiate ranging with each Anchor. 
+In the original version, there are 4 messages exchanged when using tagTwrLocalize : 
+
+0. - 1 : Short blink from the Tag (transmitTwrShortBlink)
+0. - 2 : RANGING_INITIATION from the main Anchor (transmitRangingInitiation)
+
+1. - Poll from Tag (transmitPoll)
+2. - ACTIVITY_CONTROL from anchor (transmitResponseToPoll)
+3. - final message from Tag (transmitFinalMessage)
+4. - ranging confirm from Anchor (transmitRangingConfirm), where the anchor sends the id of the next tag, encoded in 2 bytes
+
+We then repeat steps 1-4 untill the last Anchor, where we send a transmitActivityFinished (instead of transmitRangingConfirm).
+
+To gather the ranging data, each Anchor then needs to transmit its range to the Tag sequentially. 
+What we want is to exploit the 4th message to send the range instead of the id of next tag (or blink_rate for the last anchor).
+
+For that, we need an architecture change, where the tag itself is aware of all anchor ids. 
+
+In an effort to change the source code the least possible, and make it retro compatible, we begin by creating a function tagTwrLocalizeRanges.
+It takes as input the list of anchor_short_id, and returns the rage with each.
+
+
+
+
+
+
+
+
+
+On a more global aspect, as we need to get the position of multiple tags, we decided to initiate all communications from the Main Anchor. In the process, we added one more message to the chain. 
+
+In a following optimisation step, we could replace this message by a RANGING_INITIATION from Main, reducing by one the amount of messages from the original architecture
+
+
+
 Differences with thotro/arduino-dw1000
 ------------
 This is a fork of https://github.com/thotro/arduino-dw1000.<br/>

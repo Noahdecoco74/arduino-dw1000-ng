@@ -89,6 +89,20 @@ typedef struct RangeInfrastructureResult {
     uint16_t new_blink_rate;
 } RangeInfrastructureResult;
 
+typedef struct RangeInfrastructureResultRanges {
+    boolean success;
+    uint16_t Range_main;
+    uint16_t Range_B;
+    uint16_t Range_C;
+} RangeInfrastructureResultRanges;
+
+typedef struct AnchorList {
+    uint16_t Anchor_main_short_id;
+    uint16_t Anchor_B_short_id;
+    uint16_t Anchor_C_short_id;
+} AnchorList;
+
+
 typedef struct RangeAcceptResult {
     boolean success;
     double range;

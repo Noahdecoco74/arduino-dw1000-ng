@@ -84,5 +84,17 @@ namespace DW1000NgRanging {
 
         return result;
     }
+    uint16_t getRangeInCm(double distanceMeters) {
+        // 1. Convert to Centimeters (Multiply by 100)
+        // We add 0.5f to the float before casting to ensure proper rounding
+        float distanceCm = (float)(distanceMeters * 100.0) + 0.5f;
+
+        // 2. Constraint Checklist (Prevent overflow/underflow)
+        if (distanceCm <= 0.0f) return 0;
+        if (distanceCm >= 65535.0f) return 65535;
+
+        // 3. Final cast to uint16_t
+        return (uint16_t)distanceCm;
+    }
 
 }
