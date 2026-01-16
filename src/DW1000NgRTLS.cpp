@@ -81,7 +81,7 @@ namespace DW1000NgRTLS {
         DW1000Ng::startTransmit();
     }
 
-    void transmitFinalMessage(byte anchor_address[], uint16_t reply_delay, uint64_t timePollSent, uint64_t timeResponseToPollReceived) {
+    void transmitFinalMessage(byte anchor_address[], uint16_t reply_delay, uint64_t timePollSent, uint64_t timeResponseToPollReceived, byte* outTimestampData) {
         /* Calculation of future time */
         byte futureTimeBytes[LENGTH_TIMESTAMP];
 
@@ -102,6 +102,11 @@ namespace DW1000NgRTLS {
         DW1000NgUtils::writeValueToBytes(finalMessage + 10, (uint32_t) timePollSent, 4);
         DW1000NgUtils::writeValueToBytes(finalMessage + 14, (uint32_t) timeResponseToPollReceived, 4);
         DW1000NgUtils::writeValueToBytes(finalMessage + 18, (uint32_t) timeFinalMessageSent, 4);
+        
+        if(outTimestampData) {
+            memcpy(outTimestampData, &finalMessage[10], 12);
+        }
+        
         DW1000Ng::setTransmitData(finalMessage, sizeof(finalMessage));
         DW1000Ng::startTransmit(TransmitMode::DELAYED);
     }
@@ -111,6 +116,21 @@ namespace DW1000NgRTLS {
         DW1000Ng::getNetworkId(&rangingConfirm[3]);
         memcpy(&rangingConfirm[5], tag_short_address, 2);
         DW1000Ng::getDeviceAddress(&rangingConfirm[7]);
+        DW1000Ng::setTransmitData(rangingConfirm, sizeof(rangingConfirm));
+        DW1000Ng::startTransmit();
+    }
+
+    void transmitRangingConfirmExtended(byte tag_short_address[], uint64_t timePollReceived, uint64_t timeResponseToPoll, uint64_t timeFinalMessageReceive ) {
+        byte rangingConfirm[] = {DATA, SHORT_SRC_AND_DEST, SEQ_NUMBER++, 0,0, 0,0, 0,0, ACTIVITY_CONTROL, 
+            0,0,0,0, 0,0,0,0, 0,0,0,0};
+        DW1000Ng::getNetworkId(&rangingConfirm[3]);
+        memcpy(&rangingConfirm[5], tag_short_address, 2);
+        DW1000Ng::getDeviceAddress(&rangingConfirm[7]);
+
+        DW1000NgUtils::writeValueToBytes(rangingConfirm + 10, (uint32_t) timePollReceived, 4);
+        DW1000NgUtils::writeValueToBytes(rangingConfirm + 14, (uint32_t) timeResponseToPoll, 4);
+        DW1000NgUtils::writeValueToBytes(rangingConfirm + 18, (uint32_t) timeFinalMessageReceive, 4);
+
         DW1000Ng::setTransmitData(rangingConfirm, sizeof(rangingConfirm));
         DW1000Ng::startTransmit();
     }
@@ -211,11 +231,13 @@ namespace DW1000NgRTLS {
 
             if (cont_len > 10 && cont_recv[9] == ACTIVITY_CONTROL && cont_recv[10] == RANGING_CONTINUE) {
                 /* Received Response to poll */
+                byte dummy[12];
                 DW1000NgRTLS::transmitFinalMessage(
                     &cont_recv[7], 
                     replyDelayUs, 
                     DW1000Ng::getTransmitTimestamp(), // Poll transmit time
-                    DW1000Ng::getReceiveTimestamp()  // Response to poll receive time
+                    DW1000Ng::getReceiveTimestamp(),  // Response to poll receive time
+                    dummy
                 );
 
                 if(!DW1000NgRTLS::waitForNextRangingStepDelay()) {

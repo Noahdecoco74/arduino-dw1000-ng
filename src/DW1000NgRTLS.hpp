@@ -116,8 +116,9 @@ namespace DW1000NgRTLS {
     void transmitRangingInitiationShort(byte dest_short_address[]);
     void transmitPoll(byte anchor_address[]);
     void transmitResponseToPoll(byte tag_short_address[]);
-    void transmitFinalMessage(byte anchor_address[], uint16_t reply_delay, uint64_t timePollSent, uint64_t timeResponseToPollReceived);
+    void transmitFinalMessage(byte anchor_address[], uint16_t reply_delay, uint64_t timePollSent, uint64_t timeResponseToPollReceived, byte* outTimestampData);
     void transmitRangingConfirm(byte tag_short_address[], byte next_anchor[]);
+    void transmitRangingConfirmExtended(byte tag_short_address[], uint64_t timePollReceived, uint64_t timeResponseToPoll, uint64_t timeFinalMessageReceive);
     void transmitActivityFinished(byte tag_short_address[], byte blink_rate[]);
     
     boolean receiveFrame();
