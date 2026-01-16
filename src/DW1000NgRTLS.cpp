@@ -73,7 +73,7 @@ namespace DW1000NgRTLS {
     }
 
     void transmitResponseToPoll(byte tag_short_address[]) {
-        byte pollAck[] = {DATA, SHORT_SRC_AND_DEST, SEQ_NUMBER++, 0,0, 0,0, 0,0, ACTIVITY_CONTROL, RANGING_CONTINUE, 0, 0};
+        byte pollAck[] = {DATA, SHORT_SRC_AND_DEST, SEQ_NUMBER++, 0,0, 0,0, 0,0, ACTIVITY_CONTROL}; //, RANGING_CONTINUE, 0, 0};
         DW1000Ng::getNetworkId(&pollAck[3]);
         memcpy(&pollAck[5], tag_short_address, 2);
         DW1000Ng::getDeviceAddress(&pollAck[7]);
@@ -91,20 +91,19 @@ namespace DW1000NgRTLS {
         DW1000Ng::setDelayedTRX(futureTimeBytes);
         timeFinalMessageSent += DW1000Ng::getTxAntennaDelay();
 
-        byte finalMessage[] = {DATA, SHORT_SRC_AND_DEST, SEQ_NUMBER++, 0,0, 0,0, 0,0, RANGING_TAG_FINAL_RESPONSE_EMBEDDED, 
-            0,0,0,0,0,0,0,0,0,0,0,0
+        byte finalMessage[] = {DATA, SHORT_SRC_AND_DEST, SEQ_NUMBER++, 0,0, 0,0, 0,0, RANGING_TAG_FINAL_RESPONSE_EMBEDDED
         };
+
+        
 
         DW1000Ng::getNetworkId(&finalMessage[3]);
         memcpy(&finalMessage[5], anchor_address, 2);
         DW1000Ng::getDeviceAddress(&finalMessage[7]);
 
-        DW1000NgUtils::writeValueToBytes(finalMessage + 10, (uint32_t) timePollSent, 4);
-        DW1000NgUtils::writeValueToBytes(finalMessage + 14, (uint32_t) timeResponseToPollReceived, 4);
-        DW1000NgUtils::writeValueToBytes(finalMessage + 18, (uint32_t) timeFinalMessageSent, 4);
-        
         if(outTimestampData) {
-            memcpy(outTimestampData, &finalMessage[10], 12);
+            DW1000NgUtils::writeValueToBytes(outTimestampData, (uint32_t) timePollSent, 4);
+            DW1000NgUtils::writeValueToBytes(outTimestampData + 4, (uint32_t) timeResponseToPollReceived, 4);
+            DW1000NgUtils::writeValueToBytes(outTimestampData + 8, (uint32_t) timeFinalMessageSent, 4);
         }
         
         DW1000Ng::setTransmitData(finalMessage, sizeof(finalMessage));
