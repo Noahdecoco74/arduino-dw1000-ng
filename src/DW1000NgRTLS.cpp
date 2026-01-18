@@ -63,20 +63,33 @@ namespace DW1000NgRTLS {
         DW1000Ng::startTransmit();
     }
 
-    void transmitPoll(byte anchor_address[]){
+    void transmitPoll(byte anchor_address[], byte net_id[], byte personal_short_address[]){
         byte Poll[] = {DATA, SHORT_SRC_AND_DEST, SEQ_NUMBER++, 0,0, 0,0, 0,0 , RANGING_TAG_POLL};
         DW1000Ng::getNetworkId(&Poll[3]);
-        memcpy(&Poll[5], anchor_address, 2);
         DW1000Ng::getDeviceAddress(&Poll[7]);
+
+        //memcpy(&Poll[3], net_id, 2);
+        //memcpy(&Poll[7], personal_short_address, 2);
+        
+        memcpy(&Poll[5], anchor_address, 2);
+
         DW1000Ng::setTransmitData(Poll, sizeof(Poll));
         DW1000Ng::startTransmit();
     }
 
-    void transmitResponseToPoll(byte tag_short_address[]) {
+    void transmitResponseToPoll(byte tag_short_address[], byte net_id[], byte personal_short_address[]) {
         byte pollAck[] = {DATA, SHORT_SRC_AND_DEST, SEQ_NUMBER++, 0,0, 0,0, 0,0, ACTIVITY_CONTROL}; //, RANGING_CONTINUE, 0, 0};
-        DW1000Ng::getNetworkId(&pollAck[3]);
+        
+        //DW1000NgUtils::writeValueToBytes(pollAck + 3, (uint16_t) RTLS_APP_ID, 2);
+        memcpy(&pollAck[3], net_id, 2);
+        memcpy(&pollAck[7], personal_short_address, 2);
+
+        //DW1000Ng::getNetworkId(&pollAck[3]);
+        //DW1000Ng::getDeviceAddress(&pollAck[7]);
+
+
         memcpy(&pollAck[5], tag_short_address, 2);
-        DW1000Ng::getDeviceAddress(&pollAck[7]);
+
         DW1000Ng::setTransmitData(pollAck, sizeof(pollAck));
         DW1000Ng::startTransmit();
     }
@@ -101,11 +114,16 @@ namespace DW1000NgRTLS {
         DW1000Ng::startTransmit(TransmitMode::DELAYED);
     }
 
-    void transmitFinalMessageEmpty(byte anchor_address[]) {
+    void transmitFinalMessageEmpty(byte anchor_address[], byte net_id[], byte personal_short_address[]) {
         byte finalMessage[] = {DATA, SHORT_SRC_AND_DEST, SEQ_NUMBER++, 0,0, 0,0, 0,0, RANGING_TAG_FINAL_RESPONSE_EMBEDDED};
-        DW1000Ng::getNetworkId(&finalMessage[3]);
+
         memcpy(&finalMessage[5], anchor_address, 2);
-        DW1000Ng::getDeviceAddress(&finalMessage[7]);
+
+        memcpy(&finalMessage[3], net_id, 2);
+        memcpy(&finalMessage[7], personal_short_address, 2);
+
+        //DW1000Ng::getNetworkId(&finalMessage[3]);
+        //DW1000Ng::getDeviceAddress(&finalMessage[7]);
 
         DW1000Ng::setTransmitData(finalMessage, sizeof(finalMessage));
         DW1000Ng::startTransmit(TransmitMode::IMMEDIATE);
@@ -120,12 +138,16 @@ namespace DW1000NgRTLS {
         DW1000Ng::startTransmit();
     }
 
-    void transmitRangingConfirmExtended(byte tag_short_address[], uint64_t timePollReceived, uint64_t timeResponseToPoll, uint64_t timeFinalMessageReceive ) {
+    void transmitRangingConfirmExtended(byte tag_short_address[], uint64_t timePollReceived, uint64_t timeResponseToPoll, uint64_t timeFinalMessageReceive, byte net_id[], byte personal_short_address[]) {
         byte rangingConfirm[] = {DATA, SHORT_SRC_AND_DEST, SEQ_NUMBER++, 0,0, 0,0, 0,0, ACTIVITY_CONTROL, 
             0,0,0,0, 0,0,0,0, 0,0,0,0};
-        DW1000Ng::getNetworkId(&rangingConfirm[3]);
+        //DW1000Ng::getNetworkId(&rangingConfirm[3]);
+        //DW1000Ng::getDeviceAddress(&rangingConfirm[7]);
+
+        memcpy(&rangingConfirm[3], net_id, 2);
+        memcpy(&rangingConfirm[7], personal_short_address, 2);
+
         memcpy(&rangingConfirm[5], tag_short_address, 2);
-        DW1000Ng::getDeviceAddress(&rangingConfirm[7]);
 
         DW1000NgUtils::writeValueToBytes(rangingConfirm + 10, (uint32_t) timePollReceived, 4);
         DW1000NgUtils::writeValueToBytes(rangingConfirm + 14, (uint32_t) timeResponseToPoll, 4);
@@ -216,7 +238,11 @@ namespace DW1000NgRTLS {
 
         byte target_anchor[2];
         DW1000NgUtils::writeValueToBytes(target_anchor, anchor, 2);
-        DW1000NgRTLS::transmitPoll(target_anchor);
+
+        byte precalculated_data[4];
+        DW1000Ng::getNetworkId(&precalculated_data[0]),
+        DW1000Ng::getDeviceAddress(&precalculated_data[2]);
+        DW1000NgRTLS::transmitPoll(target_anchor, &precalculated_data[0], &precalculated_data[2]);
         /* Start of poll control for range */
         //delayMicroseconds(300);
         if(!DW1000NgRTLS::waitForNextRangingStep()) {
@@ -366,7 +392,11 @@ namespace DW1000NgRTLS {
 
             if(poll_len > 9 && poll_data[9] == RANGING_TAG_POLL) {
                 uint64_t timePollReceived = DW1000Ng::getReceiveTimestamp();
-                DW1000NgRTLS::transmitResponseToPoll(&poll_data[7]);
+                byte precalculated_data[4];
+                DW1000Ng::getNetworkId(&precalculated_data[0]),
+                DW1000Ng::getDeviceAddress(&precalculated_data[2]);
+
+                DW1000NgRTLS::transmitResponseToPoll(&poll_data[7], &precalculated_data[0], &precalculated_data[2]);
                 DW1000NgRTLS::waitForTransmission();
                 uint64_t timeResponseToPoll = DW1000Ng::getTransmitTimestamp();
                 delayMicroseconds(1500);
@@ -432,7 +462,11 @@ namespace DW1000NgRTLS {
 
             if(poll_len > 9 && poll_data[9] == RANGING_TAG_POLL) {
                 uint64_t timePollReceived = DW1000Ng::getReceiveTimestamp();
-                DW1000NgRTLS::transmitResponseToPoll(&poll_data[7]);
+                byte precalculated_data[4];
+                DW1000Ng::getNetworkId(&precalculated_data[0]),
+                DW1000Ng::getDeviceAddress(&precalculated_data[2]);
+
+                DW1000NgRTLS::transmitResponseToPoll(&poll_data[7], &precalculated_data[0], &precalculated_data[2]);
                 DW1000NgRTLS::waitForTransmission();
                 uint64_t timeResponseToPoll = DW1000Ng::getTransmitTimestamp();
                 delayMicroseconds(40);
