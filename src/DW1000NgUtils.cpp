@@ -116,6 +116,15 @@ namespace DW1000NgUtils {
 		return value;
 	}
 
+	uint32_t bytesAsValueShort(byte data[], uint8_t n) {
+		uint32_t value = 0;
+		// Limit loop to 4 bytes max to fit in a 32-bit integer
+		for(auto i = 0; i < n && i < 4; i++) {
+			value |= ((uint32_t)data[i] << (i*8));
+		}
+		return value;
+	}
+
 	uint8_t nibbleFromChar(char c) {
 		if(c >= '0' && c <= '9') {
 			return c-'0';

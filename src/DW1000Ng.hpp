@@ -271,6 +271,7 @@ namespace DW1000Ng {
 	return the last transmission timestamp
 	*/
 	uint64_t getTransmitTimestamp();
+	uint32_t getTransmitTimestampShort();
 
 	/**
 	Calculates the latest receive timestamp
@@ -278,6 +279,7 @@ namespace DW1000Ng {
 	return the last receive timestamp
 	*/
 	uint64_t getReceiveTimestamp();
+	uint32_t getReceiveTimestampShort();
 
 	/**
 	Calculates the current system timestamp inside the DW1000

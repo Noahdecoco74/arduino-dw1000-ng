@@ -152,7 +152,7 @@ namespace DW1000NgRTLS {
         DW1000Ng::startTransmit();
     }
 
-    void transmitRangingConfirmExtended(byte tag_short_address[], uint64_t timePollReceived, uint64_t timeResponseToPoll, uint64_t timeFinalMessageReceive, byte net_id[], byte personal_short_address[]) {
+    void transmitRangingConfirmExtended(byte tag_short_address[], uint32_t timePollReceived, uint32_t timeResponseToPoll, uint32_t timeFinalMessageReceive, byte net_id[], byte personal_short_address[]) {
         byte rangingConfirm[] = {DATA, SHORT_SRC_AND_DEST, SEQ_NUMBER++, 0,0, 0,0, 0,0, ACTIVITY_CONTROL, 
             0,0,0,0, 0,0,0,0, 0,0,0,0};
         //DW1000Ng::getNetworkId(&rangingConfirm[3]);
@@ -163,9 +163,9 @@ namespace DW1000NgRTLS {
 
         memcpy(&rangingConfirm[5], tag_short_address, 2);
 
-        DW1000NgUtils::writeValueToBytes(rangingConfirm + 10, (uint32_t) timePollReceived, 4);
-        DW1000NgUtils::writeValueToBytes(rangingConfirm + 14, (uint32_t) timeResponseToPoll, 4);
-        DW1000NgUtils::writeValueToBytes(rangingConfirm + 18, (uint32_t) timeFinalMessageReceive, 4);
+        DW1000NgUtils::writeValueToBytes(rangingConfirm + 10, timePollReceived, 4);
+        DW1000NgUtils::writeValueToBytes(rangingConfirm + 14, timeResponseToPoll, 4);
+        DW1000NgUtils::writeValueToBytes(rangingConfirm + 18, timeFinalMessageReceive, 4);
 
         DW1000Ng::setTransmitData(rangingConfirm, sizeof(rangingConfirm));
         DW1000Ng::startTransmit();

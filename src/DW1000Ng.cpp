@@ -2033,11 +2033,27 @@ namespace DW1000Ng {
 		return DW1000NgUtils::bytesAsValue(data, LEN_TX_STAMP);
 	}
 
+	uint32_t getTransmitTimestampShort() {
+		byte data[4]; // We only need 4 bytes for 32 bits
+		memset(data, 0, 4);
+		
+		// Read only 4 bytes (LSB) instead of the full 5-byte timestamp
+		_readBytesFromRegister(TX_TIME, TX_STAMP_SUB, data, 4);
+		return DW1000NgUtils::bytesAsValueShort(data, 4);
+	}
+
 	uint64_t getReceiveTimestamp() {
 		byte data[LEN_RX_STAMP];
 		memset(data, 0, LEN_RX_STAMP);
 		_readBytesFromRegister(RX_TIME, RX_STAMP_SUB, data, LEN_RX_STAMP);
 		return DW1000NgUtils::bytesAsValue(data, LEN_RX_STAMP);
+	}
+
+	uint32_t getReceiveTimestampShort() {
+		byte data[4];
+		memset(data, 0, 4);
+		_readBytesFromRegister(RX_TIME, RX_STAMP_SUB, data, 4);
+		return DW1000NgUtils::bytesAsValueShort(data, 4);
 	}
 
 	uint64_t getSystemTimestamp() {

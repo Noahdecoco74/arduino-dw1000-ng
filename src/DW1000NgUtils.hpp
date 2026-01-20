@@ -89,6 +89,7 @@ namespace DW1000NgUtils {
     returns the byte array value
     */
     uint64_t bytesAsValue(byte data[], uint8_t n);
+    uint32_t bytesAsValueShort(byte data[], uint8_t n);
 
     /**
     Converts from char to 4 bits (hexadecimal)
