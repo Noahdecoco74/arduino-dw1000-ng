@@ -65,11 +65,11 @@ namespace DW1000NgRTLS {
 
     void transmitPoll(byte anchor_address[], byte net_id[], byte personal_short_address[]){
         byte Poll[] = {DATA, SHORT_SRC_AND_DEST, SEQ_NUMBER++, 0,0, 0,0, 0,0 , RANGING_TAG_POLL};
-        DW1000Ng::getNetworkId(&Poll[3]);
-        DW1000Ng::getDeviceAddress(&Poll[7]);
+        //DW1000Ng::getNetworkId(&Poll[3]);
+        //DW1000Ng::getDeviceAddress(&Poll[7]);
 
-        //memcpy(&Poll[3], net_id, 2);
-        //memcpy(&Poll[7], personal_short_address, 2);
+        memcpy(&Poll[3], net_id, 2);
+        memcpy(&Poll[7], personal_short_address, 2);
         
         memcpy(&Poll[5], anchor_address, 2);
 
@@ -405,149 +405,6 @@ namespace DW1000NgRTLS {
                 return result;
         }
         return {false, 0};
-    }
-
-    RangeAcceptResult anchorRangeAccept(NextActivity next, uint16_t value) {
-        RangeAcceptResult returnValue;
-
-        double range;
-        if(!DW1000NgRTLS::receiveFrame()) {
-            returnValue = {false, 0};
-        } else {
-
-            size_t poll_len = DW1000Ng::getReceivedDataLength();
-            byte poll_data[poll_len];
-            DW1000Ng::getReceivedData(poll_data, poll_len);
-
-            if(poll_len > 9 && poll_data[9] == RANGING_TAG_POLL) {
-                uint64_t timePollReceived = DW1000Ng::getReceiveTimestamp();
-                byte precalculated_data[4];
-                DW1000Ng::getNetworkId(&precalculated_data[0]),
-                DW1000Ng::getDeviceAddress(&precalculated_data[2]);
-
-                DW1000NgRTLS::transmitResponseToPoll(&poll_data[7], &precalculated_data[0], &precalculated_data[2]);
-                DW1000NgRTLS::waitForTransmission();
-                uint64_t timeResponseToPoll = DW1000Ng::getTransmitTimestamp();
-                delayMicroseconds(1500);
-
-                if(!DW1000NgRTLS::receiveFrame()) {
-                    returnValue = {false, 0};
-                } else {
-
-                    size_t rfinal_len = DW1000Ng::getReceivedDataLength();
-                    byte rfinal_data[rfinal_len];
-                    DW1000Ng::getReceivedData(rfinal_data, rfinal_len);
-                    if(rfinal_len > 18 && rfinal_data[9] == RANGING_TAG_FINAL_RESPONSE_EMBEDDED) {
-                        uint64_t timeFinalMessageReceive = DW1000Ng::getReceiveTimestamp();
-
-                        byte finishValue[2];
-                        DW1000NgUtils::writeValueToBytes(finishValue, value, 2);
-
-                        if(next == NextActivity::RANGING_CONFIRM) {
-                            DW1000NgRTLS::transmitRangingConfirm(&rfinal_data[7], finishValue);
-                        } else {
-                            DW1000NgRTLS::transmitActivityFinished(&rfinal_data[7], finishValue);
-                        }
-                        
-                        DW1000NgRTLS::waitForTransmission();
-
-                        range = DW1000NgRanging::computeRangeAsymmetric(
-                            DW1000NgUtils::bytesAsValue(rfinal_data + 10, LENGTH_TIMESTAMP), // Poll send time
-                            timePollReceived, 
-                            timeResponseToPoll, // Response to poll sent time
-                            DW1000NgUtils::bytesAsValue(rfinal_data + 14, LENGTH_TIMESTAMP), // Response to Poll Received
-                            DW1000NgUtils::bytesAsValue(rfinal_data + 18, LENGTH_TIMESTAMP), // Final Message send time
-                            timeFinalMessageReceive // Final message receive time
-                        );
-
-                        range = DW1000NgRanging::correctRange(range);
-
-                        /* In case of wrong read due to bad device calibration */
-                        if(range <= 0) 
-                            range = 0.000001;
-
-                        returnValue = {true, range};
-                    }
-                }
-            }
-        }
-
-        return returnValue;
-    }
-
-    RangeAcceptResult anchorRangeAcceptRanges(NextActivity next) {
-        RangeAcceptResult returnValue;
-
-        double range;
-        if(!DW1000NgRTLS::receiveFrame()) {
-            returnValue = {false, 0};
-            Serial.print("fail 1 : did no receive POLL"); Serial.print(", tstp: "); Serial.println(micros());
-        } else {
-            Serial.print("Received POLL"); Serial.print(", tstp: "); Serial.println(micros());
-
-            size_t poll_len = DW1000Ng::getReceivedDataLength();
-            byte poll_data[poll_len];
-            DW1000Ng::getReceivedData(poll_data, poll_len);
-
-            if(poll_len > 9 && poll_data[9] == RANGING_TAG_POLL) {
-                uint64_t timePollReceived = DW1000Ng::getReceiveTimestamp();
-                byte precalculated_data[4];
-                DW1000Ng::getNetworkId(&precalculated_data[0]),
-                DW1000Ng::getDeviceAddress(&precalculated_data[2]);
-
-                DW1000NgRTLS::transmitResponseToPoll(&poll_data[7], &precalculated_data[0], &precalculated_data[2]);
-                DW1000NgRTLS::waitForTransmission();
-                uint64_t timeResponseToPoll = DW1000Ng::getTransmitTimestamp();
-                delayMicroseconds(40);
-
-                if(!DW1000NgRTLS::receiveFrame()) {
-                    returnValue = {false, 0};
-                    Serial.print("fail 2 : did not receive FINAL_MESSAGE");Serial.print(", tstp: "); Serial.println(micros());
-                } else {
-                    Serial.print("receive FINAL_MESSAGE");Serial.print(", tstp: "); Serial.println(micros());
-                    size_t rfinal_len = DW1000Ng::getReceivedDataLength();
-                    byte rfinal_data[rfinal_len];
-                    DW1000Ng::getReceivedData(rfinal_data, rfinal_len);
-                    if(rfinal_len > 18 && rfinal_data[9] == RANGING_TAG_FINAL_RESPONSE_EMBEDDED) {
-                        //Serial.print("dt calcul range cm: ");
-                        //Serial.println(micros());
-                        uint64_t timeFinalMessageReceive = DW1000Ng::getReceiveTimestamp();
-
-                        double range = 1.1;
-                        /*range = DW1000NgRanging::computeRangeAsymmetric(
-                            DW1000NgUtils::bytesAsValue(rfinal_data + 10, LENGTH_TIMESTAMP), // Poll send time
-                            timePollReceived, 
-                            timeResponseToPoll, // Response to poll sent time
-                            DW1000NgUtils::bytesAsValue(rfinal_data + 14, LENGTH_TIMESTAMP), // Response to Poll Received
-                            DW1000NgUtils::bytesAsValue(rfinal_data + 18, LENGTH_TIMESTAMP), // Final Message send time
-                            timeFinalMessageReceive // Final message receive time
-                        );*/
-
-                        //range = DW1000NgRanging::correctRange(range);
-                        /* In case of wrong read due to bad device calibration */
-                        if(range <= 0) 
-                            range = 0.000001;
-                        uint16_t rangeCM = DW1000NgRanging::getRangeInCm(range);
-                        //Serial.println(rangeCM);
-                        #if defined(ESP32)
-                            delayMicroseconds(2100);
-                        #endif
-                        //Serial.println(micros());
-
-
-                        // We only send RANGING_CONFIRM to keep it backward compatible with the original tagFinishRange function
-                        byte finishValue[2];
-                        DW1000NgUtils::writeValueToBytes(finishValue, rangeCM, 2);
-                        DW1000NgRTLS::transmitRangingConfirm(&rfinal_data[7], finishValue);
-                        DW1000NgRTLS::waitForTransmission();
-
-                        returnValue = {true, range};
-                    }
-                }
-            }
-        }
-
-        return returnValue;
     }
 
 }

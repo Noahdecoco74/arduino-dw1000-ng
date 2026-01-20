@@ -59,13 +59,13 @@ namespace DW1000NgRanging {
         return distance;
     }
 
-    double correctRange(double range) {
+    double correctRange(double range, Channel currentChannel, PulseFrequency pulseFrequency) {
         double result = 0;
 
-        Channel currentChannel = DW1000Ng::getChannel();
+        //Channel currentChannel = DW1000Ng::getChannel();
         double rxPower = -(static_cast<double>(DW1000Ng::getReceivePower()));
         
-        size_t index = DW1000Ng::getPulseFrequency() == PulseFrequency::FREQ_16MHZ ? 1 : 2;
+        size_t index = pulseFrequency == PulseFrequency::FREQ_16MHZ ? 1 : 2;
         if(currentChannel == Channel::CHANNEL_4 || currentChannel == Channel::CHANNEL_7)
             index+=2;
         

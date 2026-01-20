@@ -55,7 +55,7 @@ namespace DW1000NgRanging {
     
     returns the unbiased range
     */
-    double correctRange(double range);
+    double correctRange(double range, Channel currentChannel, PulseFrequency pulseFrequency);
 
     uint16_t getRangeInCm(double distanceMeters);
 }
