@@ -70,11 +70,20 @@ namespace DW1000NgRTLS {
 
         memcpy(&Poll[3], net_id, 2);
         memcpy(&Poll[7], personal_short_address, 2);
-        
         memcpy(&Poll[5], anchor_address, 2);
 
         DW1000Ng::setTransmitData(Poll, sizeof(Poll));
         DW1000Ng::startTransmit();
+    }
+
+    void writePoll(byte anchor_address[], byte net_id[], byte personal_short_address[]){
+        byte Poll[] = {DATA, SHORT_SRC_AND_DEST, SEQ_NUMBER++, 0,0, 0,0, 0,0 , RANGING_TAG_POLL};
+
+        memcpy(&Poll[3], net_id, 2);
+        memcpy(&Poll[7], personal_short_address, 2);
+        memcpy(&Poll[5], anchor_address, 2);
+
+        DW1000Ng::setTransmitData(Poll, sizeof(Poll));
     }
 
     void transmitResponseToPoll(byte tag_short_address[], byte net_id[], byte personal_short_address[]) {
