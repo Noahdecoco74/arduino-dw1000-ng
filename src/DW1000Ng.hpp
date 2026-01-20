@@ -543,6 +543,7 @@ namespace DW1000Ng {
 	@param [in] config frame filtering configuration
 	*/
 	void enableFrameFiltering(frame_filtering_configuration_t config);
+	void enableFrameFilteringACK(frame_filtering_configuration_t config);
 
 	/**
 	Disables the frame filtering functionality

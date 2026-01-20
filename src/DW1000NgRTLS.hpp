@@ -29,6 +29,7 @@
 /* Frame control */
 constexpr byte BLINK = 0xC5;
 constexpr byte DATA = 0x41;
+constexpr byte DATA_ACK = 0x61;
 constexpr byte SHORT_SRC_AND_DEST = 0x88;
 constexpr byte LONG_SRC_AND_DEST = 0xCC;
 constexpr byte SHORT_SRC_LONG_DEST = 0x8C;
@@ -123,6 +124,7 @@ namespace DW1000NgRTLS {
     void transmitRangingInitiationShort(byte dest_short_address[]);
     void transmitPoll(byte anchor_address[], byte net_id[], byte personal_short_address[]);
     void transmitResponseToPoll(byte tag_short_address[], byte net_id[], byte personal_short_address[]);
+    void transmitResponseToPollACK(byte tag_short_address[], byte net_id[], byte personal_short_address[]);
     void transmitFinalMessage(byte anchor_address[], uint16_t reply_delay, uint64_t timePollSent, uint64_t timeResponseToPollReceived);
     void transmitFinalMessageEmpty(byte anchor_address[], byte net_id[], byte personal_short_address[]);
     void transmitRangingConfirm(byte tag_short_address[], byte next_anchor[]);
@@ -130,6 +132,7 @@ namespace DW1000NgRTLS {
     void transmitActivityFinished(byte tag_short_address[], byte blink_rate[]);
     
     boolean receiveFrame();
+    boolean receiveFrameACK();
     void waitForTransmission();
     /*** End of TWR functions ***/
     

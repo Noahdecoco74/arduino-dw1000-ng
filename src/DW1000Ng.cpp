@@ -1700,6 +1700,21 @@ namespace DW1000Ng {
 		_writeSystemConfigurationRegister();
 	}
 
+	void enableFrameFilteringACK(frame_filtering_configuration_t config) {
+		DW1000NgUtils::setBit(_syscfg, LEN_SYS_CFG, FFEN_BIT, true);
+		DW1000NgUtils::setBit(_syscfg, LEN_SYS_CFG, FFBC_BIT, config.behaveAsCoordinator);
+		DW1000NgUtils::setBit(_syscfg, LEN_SYS_CFG, FFAB_BIT, config.allowBeacon);
+		DW1000NgUtils::setBit(_syscfg, LEN_SYS_CFG, FFAD_BIT, config.allowData);
+		DW1000NgUtils::setBit(_syscfg, LEN_SYS_CFG, FFAA_BIT, config.allowAcknowledgement);
+		DW1000NgUtils::setBit(_syscfg, LEN_SYS_CFG, FFAM_BIT, config.allowMacCommand);
+		DW1000NgUtils::setBit(_syscfg, LEN_SYS_CFG, FFAR_BIT, config.allowAllReserved);
+		DW1000NgUtils::setBit(_syscfg, LEN_SYS_CFG, FFA4_BIT, config.allowReservedFour);
+		DW1000NgUtils::setBit(_syscfg, LEN_SYS_CFG, FFA5_BIT, config.allowReservedFive);
+		DW1000NgUtils::setBit(_syscfg, LEN_SYS_CFG, AUTOACK_BIT, true); // autorise l'ACK automatique
+		
+		_writeSystemConfigurationRegister();
+	}
+
 	void disableFrameFiltering() {
 		DW1000NgUtils::setBit(_syscfg, LEN_SYS_CFG, FFEN_BIT, false);
 		_writeSystemConfigurationRegister();
