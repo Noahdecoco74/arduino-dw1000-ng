@@ -117,6 +117,16 @@ namespace DW1000NgRTLS {
         DW1000Ng::startTransmit();
     }
 
+    void writeResponseToPollACK(byte tag_short_address[], byte net_id[], byte personal_short_address[]) {
+        byte pollAck[] = {DATA_ACK, SHORT_SRC_AND_DEST, SEQ_NUMBER++, 0,0, 0,0, 0,0, ACTIVITY_CONTROL}; //, RANGING_CONTINUE, 0, 0};
+        
+        memcpy(&pollAck[3], net_id, 2);
+        memcpy(&pollAck[7], personal_short_address, 2);
+        memcpy(&pollAck[5], tag_short_address, 2);
+
+        DW1000Ng::setTransmitData(pollAck, sizeof(pollAck));
+    }
+
     void transmitFinalMessage(byte anchor_address[], uint16_t reply_delay, uint64_t timePollSent, uint64_t timeResponseToPollReceived) {
         /* Calculation of future time */
         byte futureTimeBytes[LENGTH_TIMESTAMP];
@@ -229,8 +239,8 @@ namespace DW1000NgRTLS {
     boolean receiveFrameACK() {
         uint32_t time_start = micros();
         while(!DW1000Ng::isReceiveDone()) {
-            if(micros() > time_start + 3000) {
-                DW1000Ng::clearReceiveTimeoutStatus();
+            if(micros() > time_start + 1500) {
+                //DW1000Ng::clearReceiveTimeoutStatus();
                 return false;
             }
             #if defined(ESP8266)

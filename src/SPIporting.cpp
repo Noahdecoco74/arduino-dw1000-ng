@@ -88,7 +88,7 @@ namespace SPIporting {
 		for(auto i = 0; i < dataLen; i++) {
 			_spi->transfer(data[i]); // write values
 		}
-		delayMicroseconds(5);
+		//delayMicroseconds(5);
 		_closeSPI(slaveSelectPIN);
 	}
 
@@ -100,7 +100,7 @@ namespace SPIporting {
 		for(auto i = 0; i < dataLen; i++) {
 			data[i] = _spi->transfer(0x00); // read values
 		}
-		delayMicroseconds(5);
+		//delayMicroseconds(5);
 		_closeSPI(slaveSelectPIN);
 	}
 
@@ -111,5 +111,4 @@ namespace SPIporting {
 			_currentSPI = &_slowSPI;
 		 }
 	}
-
 }
