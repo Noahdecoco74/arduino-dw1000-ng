@@ -97,13 +97,6 @@ typedef struct RangeInfrastructureResultRanges {
     uint16_t Range_C;
 } RangeInfrastructureResultRanges;
 
-typedef struct RangeInfrastructureResultDouble {
-    boolean success;
-    double Range_main;
-    double Range_B;
-    double Range_C;
-} RangeInfrastructureResultDouble;
-
 typedef struct AnchorList {
     uint16_t Anchor_main_short_id;
     uint16_t Anchor_B_short_id;
