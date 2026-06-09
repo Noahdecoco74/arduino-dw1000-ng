@@ -29,6 +29,8 @@ const uint8_t PIN_RST = 9;
 const uint8_t PIN_SS = A10; // spi select pin
 #endif
 
+bool debug = false;
+
 // Extended Unique Identifier register. 64-bit device identifier. Register file: 0x01
 const char EUI[] = "AA:BB:CC:DD:EE:FF:00:01";
 
@@ -142,11 +144,12 @@ void loop() {
 
 
         if(init_len > 18 && recv_data[9] == ACTIVITY_CONTROL) {
-            /*String toprint = "Received ACTIVITY_CONTROL : ";
+            String toprint = "Received ACTIVITY_CONTROL : ";
             toprint += (uint16_t)DW1000NgUtils::bytesAsValue(&recv_data[5], 2);
             toprint += " : ";
             toprint += (uint16_t)DW1000NgUtils::bytesAsValue(&recv_data[7], 2);
-            Serial.println(toprint);*/
+            if (debug) Serial.println(toprint);
+
             if (DW1000NgUtils::bytesAsValue(&recv_data[5], 2) == tags[current_tag] && 
                 DW1000NgUtils::bytesAsValue(&recv_data[7], 2) == anchors_ids.Anchor_C_short_id) {
 
@@ -163,7 +166,7 @@ void loop() {
                 toprint += (uint16_t)DW1000NgUtils::bytesAsValue(&recv_data[7], 2);
                 toprint += " : ";
                 toprint += recv_data[9];
-                //Serial.println(toprint);
+                if (debug) Serial.println(toprint);
             }
         }
     }
@@ -264,6 +267,6 @@ bool ranging_fct(byte dst[2]) {
         &recv_data[5]);
     DW1000NgRTLS::waitForTransmission();
     //DW1000Ng::startReceive();
-    Serial.println("Final succes");
+    if (debug) Serial.println("Final succes");
     return true;
 }

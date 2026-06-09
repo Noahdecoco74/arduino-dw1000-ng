@@ -28,6 +28,8 @@ const uint8_t PIN_RST = 9;
 const uint8_t PIN_SS = A10; // spi select pin
 #endif
 
+bool debug = false;
+
 // Extended Unique Identifier register. 64-bit device identifier. Register file: 0x01
 const char EUI[] = "AA:BB:CC:DD:EE:FF:00:02";
 
@@ -111,13 +113,7 @@ void setup() {
 }
 
 void loop() {
-    //while (true) {
     bool result = ranging_fct();
-    //}
-    //if(!result) {
-    //    Serial.println("Ranging failed");
-        //return;
-    //};
 }
 
 uint32_t timePollReceived;
@@ -125,7 +121,7 @@ uint32_t timeResponseToPoll;
 bool ranging_fct() {
     // Receive POLL
     if(!DW1000NgRTLS::receiveFrame()) {
-        //Serial.println("Error 1");
+        if (debug) Serial.println("Error 1");
         return false;
     }
 
@@ -134,24 +130,24 @@ bool ranging_fct() {
     DW1000Ng::getReceivedData(recv_data, init_len);
 
     if (!(init_len >= 9 && recv_data[9] == RANGING_TAG_POLL)){// && DW1000NgUtils::bytesAsValue(&recv_data[5], 2)==personal_short_address)){
-        /*Serial.print("Error 2");
+        if (debug) Serial.print("Error 2");
         String toprint = "Received Frame : ";
         toprint += (uint16_t)DW1000NgUtils::bytesAsValue(&recv_data[5], 2);
         toprint += " : ";
         toprint += (uint16_t)DW1000NgUtils::bytesAsValue(&recv_data[7], 2);
         toprint += " : ";
         toprint += recv_data[9];
-        Serial.println(toprint);*/
+        if (debug) Serial.println(toprint);
         return false;
     }
     else {
-        /*String toprint = "Received Frame : ";
+        String toprint = "Received Frame : ";
         toprint += (uint16_t)DW1000NgUtils::bytesAsValue(&recv_data[5], 2);
         toprint += " : ";
         toprint += (uint16_t)DW1000NgUtils::bytesAsValue(&recv_data[7], 2);
         toprint += " : ";
-        toprint += recv_data[9];*/
-        //Serial.println(toprint);
+        toprint += recv_data[9];
+        if (debug) Serial.println(toprint);
     }
 
     // Send ACTIVITY_CONTROL (response to poll)
@@ -163,10 +159,9 @@ bool ranging_fct() {
     timeResponseToPoll = DW1000Ng::getTransmitTimestampShort();
     // Receive final message
     if(!DW1000NgRTLS::receiveFrameACK()) {
-        Serial.println("Error 3");
+        if (debug) Serial.println("Error 3");
         return false;
     }
-    
     
     //size_t rfinal_len = DW1000Ng::getReceivedDataLength();
     //byte ack_data[rfinal_len];
@@ -185,5 +180,6 @@ bool ranging_fct() {
         DW1000Ng::getReceiveTimestampShort(), 
         &recv_data[3], 
         &recv_data[5]);
-    Serial.println("Final success");
+    if (debug) Serial.println("Final success");
+    return true;
 }
