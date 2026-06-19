@@ -312,6 +312,38 @@ namespace DW1000Ng {
 	float getReceiveQuality();
 
 	/**
+	Reads the carrier recovery integrator register after a successful reception.
+
+	returns the signed 21-bit carrier recovery integrator value
+	*/
+	int32_t getCarrierRecoveryIntegrator();
+
+	/**
+	Returns the float value of the CRI.
+	*/
+	float getCarrierRecoveryFrequencyRegVal();
+
+	/**
+	Converts the carrier recovery integrator value to a signed frequency offset in Hz.
+
+	returns the signed carrier frequency offset in Hz
+	*/
+	float getCarrierRecoveryFrequencyOffset();
+
+	/**
+	Converts the carrier recovery integrator value to a clock offset in ppm.
+
+	returns the signed clock offset in ppm
+	*/
+	float getCarrierRecoveryClockOffsetPPM();
+
+	/**
+	Adjusts the crystal trim register using the measured carrier clock offset.
+	This is a first-order correction intended to nudge the main clock back toward nominal.
+	*/
+	int16_t tuneMainClockFrequency();
+
+	/**
 	Sets both tx and rx antenna delay value
 
 	@param [in] value the delay in UWB time

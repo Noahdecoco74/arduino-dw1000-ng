@@ -47,6 +47,10 @@ getSystemTimestamp	KEYWORD2
 getReceivePower	KEYWORD2
 getFirstPathPower	KEYWORD2
 getReceiveQuality	KEYWORD2
+getCarrierRecoveryIntegrator	KEYWORD2
+getCarrierRecoveryFrequencyOffset	KEYWORD2
+getCarrierRecoveryClockOffsetPPM	KEYWORD2
+tuneMainClockFrequency	KEYWORD2
 setAntennaDelay	KEYWORD2
 setTxAntennaDelay	KEYWORD2
 setRxAntennaDelay	KEYWORD2

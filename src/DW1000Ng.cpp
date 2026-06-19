@@ -2074,6 +2074,81 @@ namespace DW1000Ng {
 		return (float)f2/noise;
 	}
 
+	int32_t getCarrierRecoveryIntegrator() {
+		byte data[LEN_DRX_CAR_INT];
+		uint32_t rawValue;
+		memset(data, 0, LEN_DRX_CAR_INT);
+		_readBytesFromRegister(DRX_TUNE, DRX_CAR_INT_SUB, data, LEN_DRX_CAR_INT);
+		rawValue = (uint32_t)data[0] | ((uint32_t)data[1] << 8) | ((uint32_t)data[2] << 16);
+		rawValue &= 0x1FFFFF;
+		if(rawValue & 0x100000) {
+			rawValue |= 0xFFE00000;
+		}
+		return (int32_t)rawValue;
+	}
+
+	static float _carrierFrequencyHz() {
+		switch(_channel) {
+			case Channel::CHANNEL_1:
+				return 3494.4e6f;
+			case Channel::CHANNEL_2:
+			case Channel::CHANNEL_4:
+				return 3993.6e6f;
+			case Channel::CHANNEL_3:
+				return 4492.8e6f;
+			case Channel::CHANNEL_5:
+			case Channel::CHANNEL_7:
+				return 6489.6e6f;
+			default:
+				return 0.0f;
+		}
+	}
+
+	float getCarrierRecoveryFrequencyRegVal() {
+		const float integrator = (float)getCarrierRecoveryIntegrator();
+		/* register is fixed-point 4.17 (21-bit signed): value = Cint * 2^17 */
+		return integrator;
+	}
+
+	float getCarrierRecoveryFrequencyOffset() {
+		const float samples = (_dataRate == DataRate::RATE_110KBPS) ? 8192.0f : 1024.0f;
+		const float integrator = (float)getCarrierRecoveryIntegrator();
+		return integrator * 998400000.0f / (2.0f * 131072.0f * samples);
+	}
+
+	float getCarrierRecoveryClockOffsetPPM() {
+		const float carrierFrequencyHz = _carrierFrequencyHz();
+		if(carrierFrequencyHz <= 0.0f) {
+			return 0.0f;
+		}
+		return -1000000.0f * getCarrierRecoveryFrequencyOffset() / carrierFrequencyHz;
+	}
+
+	int16_t tuneMainClockFrequency() {
+		const float clockOffsetPPM = getCarrierRecoveryClockOffsetPPM();
+		const float trimPpmPerStep = 1.0f;
+		byte fsxtalt[LEN_FS_XTALT];
+		int16_t currentTrim;
+		int16_t trimDelta;
+		int16_t newTrim;
+
+		_readBytesFromRegister(FS_CTRL, FS_XTALT_SUB, fsxtalt, LEN_FS_XTALT);
+		currentTrim = (int16_t)(fsxtalt[0] & 0x1F);
+		trimDelta = (int16_t)((clockOffsetPPM >= 0.0f) ? (clockOffsetPPM / trimPpmPerStep + 0.5f)
+		                                              : (clockOffsetPPM / trimPpmPerStep - 0.5f));
+		newTrim = currentTrim - trimDelta;
+		if(newTrim < 0) {
+			newTrim = 0;
+		} else if(newTrim > 0x1F) {
+			newTrim = 0x1F;
+		}
+		if (newTrim != currentTrim) {
+			DW1000NgUtils::writeValueToBytes(fsxtalt, ((byte)newTrim & 0x1F) | 0x60, LEN_FS_XTALT);
+			_writeBytesToRegister(FS_CTRL, FS_XTALT_SUB, fsxtalt, LEN_FS_XTALT);
+		}
+		return newTrim;
+	}
+
 	float getFirstPathPower() {
 		byte         fpAmpl1Bytes[LEN_FP_AMPL1];
 		byte         fpAmpl2Bytes[LEN_FP_AMPL2];
