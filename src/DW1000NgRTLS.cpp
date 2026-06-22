@@ -208,19 +208,32 @@ namespace DW1000NgRTLS {
         //DW1000Ng::startTransmit(TransmitMode::DELAYED);
     }
 
-    void transmitRangingConfirmSingleDelayedSimple(uint32_t timePollReceived) {
+    byte personal_address[2] = {0,1};
+    //DW1000NgUtils::writeValueToBytes(net_id_byte, (uint16_t)RTLS_APP_ID, 2);
+    //DW1000NgUtils::writeValueToBytes(personal_address, RTLS_APP_ID, 2);
+    //byte net_id_byte[2] = {0,0};
+    //DW1000NgUtils::writeValueToBytes(net_id_byte, (uint16_t)1, 2);
+    byte distant_address[2] = {255, 255};
+
+    void transmitRangingConfirmSingleDelayedSimple(uint64_t timePollReceived) {
         byte rangingConfirm[] = {DATA, SHORT_SRC_AND_DEST, SEQ_NUMBER++, 0,0, 0,0, 0,0, ACTIVITY_CONTROL,
             0,0,0,0};
-        DW1000Ng::getNetworkId(&rangingConfirm[3]);
-        DW1000Ng::getDeviceAddress(&rangingConfirm[7]);
+        
+        //memcpy(&rangingConfirm[3], net_id_byte, 2);
+        DW1000NgUtils::writeValueToBytes(rangingConfirm + 3, RTLS_APP_ID, 2);
+        //DW1000Ng::getNetworkId(&rangingConfirm[3]);
+        
+        memcpy(&rangingConfirm[7], personal_address, 2);
+        //DW1000NgUtils::writeValueToBytes(rangingConfirm + 7, (uint16_t)1, 2);
+        //DW1000Ng::getDeviceAddress(&rangingConfirm[7]);
 
         //memcpy(&rangingConfirm[3], personal_short_address, 2);
-        byte anchor_address[2] = {255, 255};
-        memcpy(&rangingConfirm[5], anchor_address, 2);
+        
+        memcpy(&rangingConfirm[5], distant_address, 2);
 
         DW1000NgUtils::writeValueToBytes(rangingConfirm + 10, timePollReceived, 4);
 
-        DW1000Ng::setTransmitData(rangingConfirm, sizeof(rangingConfirm));
+        DW1000Ng::setTransmitData(rangingConfirm, 14);
         //DW1000Ng::startTransmit();
         DW1000Ng::startTransmit(TransmitMode::DELAYED);
     }
