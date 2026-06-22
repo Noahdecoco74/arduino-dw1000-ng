@@ -109,6 +109,13 @@ typedef struct RangeAcceptResult {
     double range;
 } RangeAcceptResult;
 
+typedef struct RangeAcceptResultPerso {
+    bool success;
+    double range;
+    uint32_t sentClock;
+} RangeAcceptResultPerso;
+
+
 namespace DW1000NgRTLS {
     /*** TWR functions used in ISO/IEC 24730-62:2013, refer to the standard or the decawave manual for details about TWR ***/
     byte increaseSequenceNumber();
@@ -124,6 +131,8 @@ namespace DW1000NgRTLS {
     void transmitFinalMessageEmpty(byte anchor_address[], byte net_id[], byte personal_short_address[]);
     void transmitRangingConfirm(byte tag_short_address[], byte next_anchor[]);
     void transmitRangingConfirmExtended(byte tag_short_address[], uint32_t timePollReceived, uint32_t timeResponseToPoll, uint32_t timeFinalMessageReceive, byte net_id[], byte personal_short_address[]);
+    void transmitRangingConfirmSingleDelayed(byte tag_short_address[], uint32_t timePollReceived, byte net_id[], byte personal_short_address[]);
+    void transmitRangingConfirmSingleDelayedSimple(uint32_t timePollReceived);
     void transmitActivityFinished(byte tag_short_address[], byte blink_rate[]);
     
     boolean receiveFrame();

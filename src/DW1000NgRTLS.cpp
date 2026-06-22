@@ -190,6 +190,42 @@ namespace DW1000NgRTLS {
         DW1000Ng::startTransmit();
     }
 
+    void transmitRangingConfirmSingleDelayed(byte tag_short_address[], uint32_t timePollReceived, byte net_id[], byte personal_short_address[]) {
+        byte rangingConfirm[] = {DATA, SHORT_SRC_AND_DEST, SEQ_NUMBER++, 0,0, 0,0, 0,0, ACTIVITY_CONTROL, 
+            0,0,0,0};
+        //DW1000Ng::getNetworkId(&rangingConfirm[3]);
+        //DW1000Ng::getDeviceAddress(&rangingConfirm[7]);
+
+        memcpy(&rangingConfirm[3], net_id, 2);
+        memcpy(&rangingConfirm[7], personal_short_address, 2);
+
+        memcpy(&rangingConfirm[5], tag_short_address, 2);
+
+        DW1000NgUtils::writeValueToBytes(rangingConfirm + 10, timePollReceived, 4);
+
+        DW1000Ng::setTransmitData(rangingConfirm, sizeof(rangingConfirm));
+        DW1000Ng::startTransmit();
+        //DW1000Ng::startTransmit(TransmitMode::DELAYED);
+    }
+
+    void transmitRangingConfirmSingleDelayedSimple(uint32_t timePollReceived) {
+        byte rangingConfirm[] = {DATA, SHORT_SRC_AND_DEST, SEQ_NUMBER++, 0,0, 0,0, 0,0, ACTIVITY_CONTROL,
+            0,0,0,0};
+        DW1000Ng::getNetworkId(&rangingConfirm[3]);
+        DW1000Ng::getDeviceAddress(&rangingConfirm[7]);
+
+        //memcpy(&rangingConfirm[3], personal_short_address, 2);
+        byte anchor_address[2] = {255, 255};
+        memcpy(&rangingConfirm[5], anchor_address, 2);
+
+        DW1000NgUtils::writeValueToBytes(rangingConfirm + 10, timePollReceived, 4);
+
+        DW1000Ng::setTransmitData(rangingConfirm, sizeof(rangingConfirm));
+        //DW1000Ng::startTransmit();
+        DW1000Ng::startTransmit(TransmitMode::DELAYED);
+    }
+    
+
     void transmitActivityFinished(byte tag_short_address[], byte blink_rate[]) {
         /* I send the new blink rate to the tag */
         byte rangingConfirm[] = {DATA, SHORT_SRC_AND_DEST, SEQ_NUMBER++, 0,0, 0,0, 0,0, ACTIVITY_CONTROL, ACTIVITY_FINISHED, blink_rate[0], blink_rate[1]};
@@ -239,8 +275,8 @@ namespace DW1000NgRTLS {
     boolean receiveFrameACK() {
         uint32_t time_start = micros();
         while(!DW1000Ng::isReceiveDone()) {
-            if(micros() > time_start + 1500) {
-                //DW1000Ng::clearReceiveTimeoutStatus();
+            if(micros() > time_start + 15000) {
+                DW1000Ng::clearReceiveTimeoutStatus();
                 return false;
             }
             #if defined(ESP8266)
