@@ -223,9 +223,9 @@ namespace DW1000NgRTLS {
         DW1000NgUtils::writeValueToBytes(rangingConfirm + 3, RTLS_APP_ID, 2);
         //DW1000Ng::getNetworkId(&rangingConfirm[3]);
         
-        memcpy(&rangingConfirm[7], personal_address, 2);
+        //memcpy(&rangingConfirm[7], personal_address, 2);
         //DW1000NgUtils::writeValueToBytes(rangingConfirm + 7, (uint16_t)1, 2);
-        //DW1000Ng::getDeviceAddress(&rangingConfirm[7]);
+        DW1000Ng::getDeviceAddress(&rangingConfirm[7]);
 
         //memcpy(&rangingConfirm[3], personal_short_address, 2);
         
@@ -288,7 +288,7 @@ namespace DW1000NgRTLS {
     boolean receiveFrameACK() {
         uint32_t time_start = micros();
         while(!DW1000Ng::isReceiveDone()) {
-            if(micros() > time_start + 15000) {
+            if(micros() > time_start + 5000) {
                 DW1000Ng::clearReceiveTimeoutStatus();
                 return false;
             }
