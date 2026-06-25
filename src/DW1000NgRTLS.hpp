@@ -109,13 +109,6 @@ typedef struct RangeAcceptResult {
     double range;
 } RangeAcceptResult;
 
-typedef struct RangeAcceptResultPerso {
-    bool success;
-    double range;
-    uint32_t sentClock;
-} RangeAcceptResultPerso;
-
-
 namespace DW1000NgRTLS {
     /*** TWR functions used in ISO/IEC 24730-62:2013, refer to the standard or the decawave manual for details about TWR ***/
     byte increaseSequenceNumber();
