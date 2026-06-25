@@ -58,16 +58,17 @@ inline void calSetup(){
     DW1000Ng::setNetworkId(net_id);
     DW1000Ng::setDeviceAddress(personal_short_address);
     
-    #ifdef antennaDelay
+
+    #ifndef CALIBRATE_DELAYS
     delay_tx = (uint16_t)(0.44*antennaDelay);
     delay_rx = (uint16_t)(0.56*antennaDelay);
     DW1000Ng::setTxAntennaDelay(delay_tx);
     DW1000Ng::setRxAntennaDelay(delay_rx);
     #else
-    DW1000Ng::setAntennaDelay(16415);
+    DW1000Ng::setAntennaDelay(0);
     #endif
-    DW1000Ng::setTXPower(0x1F1F1F1F);
-    //DW1000Ng::setTXPower(0x3F3F3F3F);
+    //DW1000Ng::setTXPower(0x1F1F1F1F);
+    DW1000Ng::setTXPower(0xC0C0C0C0);
     //DW1000Ng::setTXPower(0x85858585);
     
     // Precalculate values to avoid useless clock cycles later on
@@ -137,18 +138,57 @@ double computeRangeAsymmetric(  uint64_t timePollSent,
     return distance;
 }
 
-uint64_t getTransmitTimestamp() {
-    return DW1000Ng::getTransmitTimestamp() - delay_tx;
-}
-uint32_t getTransmitTimestampShort() {
-    return DW1000Ng::getTransmitTimestampShort() - delay_tx;
+double computeDelays(  uint64_t timePollSent, 
+                                uint64_t timePollReceived, 
+                                uint64_t timePollAckSent, 
+                                uint64_t timePollAckReceived,
+                                uint64_t timeRangeSent,
+                                uint64_t timeRangeReceived
+                            )
+{
+    uint32_t timePollSent_32 = static_cast<uint32_t>(timePollSent);
+    uint32_t timePollReceived_32 = static_cast<uint32_t>(timePollReceived);
+    uint32_t timePollAckSent_32 = static_cast<uint32_t>(timePollAckSent);
+    uint32_t timePollAckReceived_32 = static_cast<uint32_t>(timePollAckReceived);
+    uint32_t timeRangeSent_32 = static_cast<uint32_t>(timeRangeSent);
+    uint32_t timeRangeReceived_32 = static_cast<uint32_t>(timeRangeReceived);
+    
+    double round1 = static_cast<double>(timePollAckReceived_32 - timePollSent_32);
+    double reply1 = static_cast<double>(timePollAckSent_32 - timePollReceived_32);
+    double round2 = static_cast<double>(timeRangeReceived_32 - timePollAckSent_32);
+    double reply2 = static_cast<double>(timeRangeSent_32 - timePollAckReceived_32);
+
+    double k_AB = (round1+reply2)/(reply1+round2);
+
+    //int64_t tof_uwb = static_cast<int64_t>(k_AB*(round1 * round2 - reply1 * reply2) / (k_AB*(round1 + reply2) + round2 + reply1));
+    //double distance = tof_uwb * DISTANCE_OF_RADIO;
+
+    int64_t tof = 0.32 * DISTANCE_OF_RADIO_INV;
+
+    double A = -tof*(k_AB + 1/k_AB) + (round1*round2 - reply1*reply2) / (round2+reply1);
+    //Serial.println("A:" + String(A));
+    //Serial.println("B:" + String(-k_AB));
+    //Serial.print("RX power is [dBm] ... "); Serial.println(DW1000Ng::getReceivePower());
+
+    
+    double distance = A;
+
+    return distance;
 }
 
+
+
+uint64_t getTransmitTimestamp() {
+    return DW1000Ng::getTransmitTimestamp();
+}
+uint32_t getTransmitTimestampShort() {
+    return DW1000Ng::getTransmitTimestampShort();
+}
 uint64_t getReceiveTimestamp() {
-    return DW1000Ng::getReceiveTimestamp() + delay_rx;
+    return DW1000Ng::getReceiveTimestamp();
 }
 uint32_t getReceiveTimestampShort() {
-    return DW1000Ng::getReceiveTimestampShort() + delay_rx;
+    return DW1000Ng::getReceiveTimestampShort();
 }
 
 
@@ -199,7 +239,17 @@ RangeAcceptResult start_ranging_fct(uint16_t index) {
 
     if(!(rfinal_len > 18 && rfinal_data[9] == ACTIVITY_CONTROL)) { //Serial.println("Error 4");
         return {false, 4};}
-    
+        
+    #ifdef CALIBRATE_DELAYS
+    returnValue.range = computeDelays(
+        timePollSent, // Poll send time
+        DW1000NgUtils::bytesAsValue(rfinal_data + 10, LENGTH_TIMESTAMP),  // timePollReceived
+        DW1000NgUtils::bytesAsValue(rfinal_data + 14, LENGTH_TIMESTAMP),  // timeResponseToPoll // Response to poll sent time
+        timeACTReceived, // Response to Poll Received
+        timeFinalMessageSent, // Final Message send time
+        DW1000NgUtils::bytesAsValue(rfinal_data + 18, LENGTH_TIMESTAMP)   // timeFinalMessageReceive // Final message receive time
+    );
+    #else
     returnValue.range = computeRangeAsymmetric(
         timePollSent, // Poll send time
         DW1000NgUtils::bytesAsValue(rfinal_data + 10, LENGTH_TIMESTAMP),  // timePollReceived
@@ -208,6 +258,7 @@ RangeAcceptResult start_ranging_fct(uint16_t index) {
         timeFinalMessageSent, // Final Message send time
         DW1000NgUtils::bytesAsValue(rfinal_data + 18, LENGTH_TIMESTAMP)   // timeFinalMessageReceive // Final message receive time
     );
+    #endif
 
     //uint64_t timeAfterCalcRange = micros();
 

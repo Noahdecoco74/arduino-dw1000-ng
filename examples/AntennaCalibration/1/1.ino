@@ -9,7 +9,8 @@
 const char EUI[] = "AA:BB:CC:DD:EE:FF:00:01";
 uint16_t personal_short_address = 1;
 
-#define antennaDelay 0//32820
+//#define CALIBRATE_DELAYS true
+#define antennaDelay 32910//32820
 
 #include "../AntennaCalibrationCommon.hpp"
 

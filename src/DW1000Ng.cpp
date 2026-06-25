@@ -2126,7 +2126,7 @@ namespace DW1000Ng {
 
 	int16_t tuneMainClockFrequency() {
 		const float clockOffsetPPM = getCarrierRecoveryClockOffsetPPM();
-		const float trimPpmPerStep = 2.0f;
+		const float trimPpmPerStep = 5.0/3.0f;
 		byte fsxtalt[LEN_FS_XTALT];
 		int16_t currentTrim;
 		int16_t trimDelta;
