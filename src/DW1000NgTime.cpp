@@ -30,4 +30,7 @@ namespace DW1000NgTime {
     uint64_t microsecondsToUWBTime(uint64_t microSeconds) {
         return static_cast<uint64_t>(microSeconds * TIME_RES_INV);
     }
+    uint64_t microsecondsToUWBTimeDouble(double microSeconds) {
+        return static_cast<uint64_t>(microSeconds * TIME_RES_INV);
+    }
 }

@@ -28,4 +28,5 @@
 
 namespace DW1000NgTime {
     uint64_t microsecondsToUWBTime(uint64_t microSeconds);
+    uint64_t microsecondsToUWBTimeDouble(double microSeconds);
 }
